@@ -1,19 +1,19 @@
 {
-    "name": "vortex-gateway",
-    "version": "1.0.0",
-    "main": "dist/server.js",
-    "scripts": {
-      "build": "tsc",
-      "start": "node dist/server.js",
-      "dev": "ts-node-dev --respawn src/server.ts"
-    },
-    "dependencies": {
-      "@fastify/redis": "^6.1.1",
-      "fastify": "^4.21.0"
-    },
-    "devDependencies": {
-      "@types/node": "^20.5.0",
-      "ts-node-dev": "^2.0.0",
-      "typescript": "^5.1.6"
-    }
+  "name": "vortex-gateway",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn src/server.ts"
+  },
+  "dependencies": {
+    "@fastify/redis": "^6.2.0",
+    "fastify": "^4.29.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.1.6"
   }
+}
