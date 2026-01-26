@@ -1,6 +1,11 @@
 import Fastify from "fastify";
 import fastifyRedis from "@fastify/redis";
+import fastifyJwt from "@fastify/jwt";
 import { setupRateLimiter } from "./limiter";
+import applySecurityHeaders, { 
+  applyRelaxedSecurityHeaders, 
+  applySwaggerSecurityHeaders 
+} from "./utils/http/securityHeaders";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -22,6 +27,10 @@ const server = Fastify({
 
 const start = async () => {
   try {
+    await server.register(fastifyJwt, {
+      secret: process.env.JWT_SECRET || "super-secret-vortex-key-2026",
+    });
+
     const { default: swagger } = await import("@fastify/swagger");
     const { default: swaggerUi } = await import("@fastify/swagger-ui");
 
@@ -29,25 +38,17 @@ const start = async () => {
       openapi: {
         info: {
           title: "Vortex Shield API",
-          description:
-            "Lightweight API Gateway with advanced rate limiting using Fastify and Redis. Protects your endpoints from abuse.",
+          description: "Lightweight API Gateway with advanced rate limiting using Fastify and Redis.",
           version: "1.0.0",
         },
-        servers: [
-          { url: "http://localhost:3000", description: "Local development" },
-        ],
+        servers: [{ url: "http://localhost:3000" }],
       },
     });
 
     await server.register(swaggerUi, {
       routePrefix: "/docs",
-      uiConfig: {
-        docExpansion: "full",
-        deepLinking: true,
-      },
+      uiConfig: { docExpansion: "full", deepLinking: true },
     });
-
-    server.log.info("Swagger/OpenAPI documentation registered at /docs");
 
     await server.register(fastifyRedis, {
       host: process.env.REDIS_HOST || "redis",
@@ -56,28 +57,29 @@ const start = async () => {
 
     await setupRateLimiter(server);
 
+    server.post("/login", async (req, reply) => {
+      const token = server.jwt.sign({ user: "Arnel", role: "admin" });
+      return { token };
+    });
+
     server.get(
       "/health",
       {
         schema: {
-          description: "Check if the gateway is online",
+          description: "Health check",
           tags: ["system"],
-          summary: "Health check",
           response: {
             200: {
-              description: "Successful response",
               type: "object",
               properties: {
-                status: { type: "string", example: "Vortex Online" },
-                timestamp: { type: "string", format: "date-time" },
+                status: { type: "string" },
+                timestamp: { type: "string" },
               },
             },
           },
         },
       },
-      async () => {
-        return { status: "Vortex Online", timestamp: new Date().toISOString() };
-      },
+      async () => ({ status: "Vortex Online", timestamp: new Date().toISOString() })
     );
 
     server.delete(
@@ -92,23 +94,39 @@ const start = async () => {
           },
         },
       },
-      async (request: any, reply) => {
+      async (request: any) => {
         const { ip } = request.params;
-        const KEY_BLACKLIST = `vortex:blacklist:${ip}`;
-        const KEY_VIOLATIONS = `vortex:violations:${ip}`;
-
-        await server.redis.del(KEY_BLACKLIST);
-        await server.redis.del(KEY_VIOLATIONS);
-
-        return {
-          status: "success",
-          message: `IP ${ip} has been unbanned and violations reset.`,
-        };
-      },
+        await server.redis.del(`vortex:blacklist:${ip}`);
+        await server.redis.del(`vortex:violations:${ip}`);
+        return { status: "success", message: `IP ${ip} unbanned.` };
+      }
     );
+
+    server.addHook("onRequest", async (req, reply) => {
+      const url = req.url;
+
+      if (url.startsWith("/docs")) {
+        applySwaggerSecurityHeaders(reply);
+        return;
+      }
+
+      if (url === "/health" || url === "/login") {
+        applyRelaxedSecurityHeaders(reply);
+        return;
+      }
+
+      applySecurityHeaders(reply);
+
+      try {
+        await req.jwtVerify();
+      } catch (err) {
+        if (url !== "/health" && url !== "/login" && !url.startsWith("/docs")) {
+          return reply.code(401).send({ error: "Unauthorized", message: "Token invalid" });
+        }
+      }
+    });
+
     await server.listen({ port: 3000, host: "0.0.0.0" });
-    server.log.info(`Server listening on http://0.0.0.0:3000`);
-    server.log.info(`API Documentation: http://localhost:3000/docs`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);
