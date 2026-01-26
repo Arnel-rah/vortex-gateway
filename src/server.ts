@@ -106,7 +106,6 @@ const start = async () => {
         };
       },
     );
-
     await server.listen({ port: 3000, host: "0.0.0.0" });
     server.log.info(`Server listening on http://0.0.0.0:3000`);
     server.log.info(`API Documentation: http://localhost:3000/docs`);

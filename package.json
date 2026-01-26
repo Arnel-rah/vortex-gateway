@@ -8,6 +8,7 @@
     "dev": "ts-node-dev --respawn src/server.ts"
   },
   "dependencies": {
+    "@fastify/jwt": "^10.0.0",
     "@fastify/redis": "^6.2.0",
     "@fastify/swagger": "^8.15.0",
     "@fastify/swagger-ui": "^2.1.0",
