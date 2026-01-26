@@ -44,3 +44,30 @@ const applySecurityHeaders = (
     reply.header("Server", "TrophyHub-API");
   }
 };
+
+// Swagger UI
+const SWAGGER_CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'";
+
+export const applySwaggerSecurityHeaders = (reply: FastifyReply): void => {
+  applySecurityHeaders(reply, SWAGGER_CSP);
+
+  reply.header("cache-control", "public, max-age=300");
+};
+
+export const applyRelaxedSecurityHeaders = (reply: FastifyReply) => {
+  reply.header("X-Content-Type-Options", "nosniff");
+  reply.header("X-Frame-Options", "DENY");
+  reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  reply.header("Cache-Control", "public, max-age=300");
+  reply.removeHeader("Server");
+  reply.removeHeader("X-Powered-By");
+};
+
+export const applyCorsSecurityHeaders = (reply: FastifyReply) => {
+  reply.header("X-Content-Type-Options", "nosniff");
+  reply.removeHeader("Server");
+  reply.removeHeader("X-Powered-By");
+};
+
+export default applySecurityHeaders;
