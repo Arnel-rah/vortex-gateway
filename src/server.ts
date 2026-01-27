@@ -65,7 +65,7 @@ const start = async () => {
     });
 
     server.get(
-      "/health",
+      `${baseApiUrl}/health`,
       {
         schema: {
           description: "Health check",
@@ -85,7 +85,7 @@ const start = async () => {
     );
 
     server.delete(
-      "/admin/unban/:ip",
+      `${baseApiUrl}/admin/unban/:ip`,
       {
         schema: {
           summary: "Unban an IP address",
