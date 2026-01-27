@@ -8,6 +8,8 @@ import applySecurityHeaders, {
 } from "./utils/http/securityHeaders";
 
 const isDev = process.env.NODE_ENV !== "production";
+const baseApiUrl = "/api/v1";
+
 
 const server = Fastify({
   logger: isDev
@@ -41,12 +43,12 @@ const start = async () => {
           description: "Lightweight API Gateway with advanced rate limiting using Fastify and Redis.",
           version: "1.0.0",
         },
-        servers: [{ url: "http://localhost:3000" }],
+        servers: [{ url: `http://localhost:3000/${baseApiUrl}` }],
       },
     });
 
     await server.register(swaggerUi, {
-      routePrefix: "/docs",
+      routePrefix: `${baseApiUrl}/docs`,
       uiConfig: { docExpansion: "full", deepLinking: true },
     });
 
@@ -57,7 +59,7 @@ const start = async () => {
 
     await setupRateLimiter(server);
 
-    server.post("/login", async (req, reply) => {
+    server.post(`${baseApiUrl}/login`, async (req, reply) => {
       const token = server.jwt.sign({ user: "Arnel", role: "admin" });
       return { token };
     });
@@ -105,12 +107,12 @@ const start = async () => {
     server.addHook("onRequest", async (req, reply) => {
       const url = req.url;
 
-      if (url.startsWith("/docs")) {
+      if (url.startsWith(`${baseApiUrl}/docs`)) {
         applySwaggerSecurityHeaders(reply);
         return;
       }
 
-      if (url === "/health" || url === "/login") {
+      if (url === `${baseApiUrl}/health` || url === `${baseApiUrl}/login`) {
         applyRelaxedSecurityHeaders(reply);
         return;
       }
@@ -120,7 +122,7 @@ const start = async () => {
       try {
         await req.jwtVerify();
       } catch (err) {
-        if (url !== "/health" && url !== "/login" && !url.startsWith("/docs")) {
+        if (url !== `${baseApiUrl}/health` && url !== `${baseApiUrl}/login` && !url.startsWith(`${baseApiUrl}/docs`)) {
           return reply.code(401).send({ error: "Unauthorized", message: "Token invalid" });
         }
       }
