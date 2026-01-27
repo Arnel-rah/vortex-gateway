@@ -43,7 +43,7 @@ const start = async () => {
           description: "Lightweight API Gateway with advanced rate limiting using Fastify and Redis.",
           version: "1.0.0",
         },
-        servers: [{ url: `http://localhost:3000/${baseApiUrl}` }],
+        servers: [{ url: `http://localhost:3000${baseApiUrl}` }],
       },
     });
 
